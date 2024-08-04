@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "uthash.h": "c",
+        "utstring.h": "c",
+        "stdbool.h": "c",
+        "pthread.h": "c",
+        "features.h": "c",
+        "stdatomic.h": "c",
+        "threads.h": "c",
+        "logger.h": "c",
+        "unistd.h": "c"
+    }
+}
