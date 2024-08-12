@@ -13,14 +13,37 @@ static void buffer_init(buffer_t *buf, size_t elem_size, size_t max_size)
     buf->max = max_size;
     buf->elem_size = elem_size;
     buf->full = false;
-    mtx_init(&buf->lock, mtx_plain);
 }
 
 /* 销毁缓冲区 */
 static void buffer_free(buffer_t *buf)
 {
     free(buf->buffer);
-    mtx_destroy(&buf->lock);
+}
+
+static void buffer_push(buffer_t *buf, void *item)
+{
+    memcpy((char *)buf->buffer + buf->head * buf->elem_size, item, buf->elem_size);
+    buf->head = (buf->head + 1) % buf->max;
+
+    if (buf->head == buf->tail)
+    {
+        buf->full = true;
+    }
+}
+
+static bool buffer_pop(buffer_t *buf, void *item)
+{
+    bool success = false;
+    if (buf->tail != buf->head || buf->full)
+    {
+        memcpy(item, (char *)buf->buffer + buf->tail * buf->elem_size, buf->elem_size);
+        buf->tail = (buf->tail + 1) % buf->max;
+        buf->full = false;
+        success = true;
+    }
+
+    return success;
 }
 
 /* 初始化环形队列 */
@@ -47,61 +70,36 @@ void ring_queue_free(ring_queue *q)
 /* 入队操作 */
 void ring_queue_enqueue(ring_queue *q, void *item)
 {
-    // 入队不需要交换队列
-    buffer_t *buf = q->write_buf;
-
-    mtx_lock(&buf->lock);
-    memcpy((char *)buf->buffer + buf->head * buf->elem_size, item, buf->elem_size);
-    buf->head = (buf->head + 1) % buf->max;
-
-    if (buf->head == buf->tail)
-    {
-        buf->full = true;
-    }
-    mtx_unlock(&buf->lock);
-
     mtx_lock(&q->swap_lock);
+
+    buffer_t *buf = q->write_buf;
+    buffer_push(buf, item);
+
     if (buf->full)
     {
-        mtx_lock(&q->read_buf->lock);
         buffer_t *temp = q->write_buf;
         q->write_buf = q->read_buf;
         q->read_buf = temp;
-        q->write_buf->head = 0;
-        q->write_buf->tail = 0;
-        q->write_buf->full = false;
-        mtx_unlock(&q->read_buf->lock);
     }
+
     mtx_unlock(&q->swap_lock);
 }
 
 /* 出队操作 */
 bool ring_queue_dequeue(ring_queue *q, void *item)
 {
-    // 出队时，可能需要交互队列
-    buffer_t *buf = q->read_buf;
-    bool success = false;
-
-    mtx_lock(&buf->lock);
-    if (buf->tail != buf->head || buf->full)
-    {
-        memcpy(item, (char *)buf->buffer + buf->tail * buf->elem_size, buf->elem_size);
-        buf->tail = (buf->tail + 1) % buf->max;
-        buf->full = false;
-        success = true;
-    }
-    mtx_unlock(&buf->lock);
-
     mtx_lock(&q->swap_lock);
-    if (buf->tail == buf->head && q->write_buf->head != q->write_buf->tail)
-    {
-        mtx_lock(&q->write_buf->lock);
-        buffer_t *temp = q->write_buf;
-        q->write_buf = q->read_buf;
-        q->read_buf = temp;
-        mtx_unlock(&q->write_buf->lock);
-    }
-    mtx_unlock(&q->swap_lock);
+    buffer_t *buf = q->read_buf;
 
+    bool success = buffer_pop(buf,item);
+    if (!success)
+    {
+        buf = q->write_buf;
+        q->write_buf = q->read_buf;
+        q->read_buf = buf;
+        success = buffer_pop(buf,item);
+    }
+
+    mtx_unlock(&q->swap_lock);
     return success;
 }

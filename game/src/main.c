@@ -23,7 +23,7 @@ int main(int argc, char **argv)
     player_to_string(p);
     print_players();
 
-    ring_queue *q = ring_queue_new(sizeof(Player), 10);
+    ring_queue *q = ring_queue_new(sizeof(Player), 10000);
     for (size_t i = 0; i < 10; i++)
     {
         Player p = {.id = i};

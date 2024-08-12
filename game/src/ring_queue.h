@@ -11,7 +11,6 @@ typedef struct
     size_t max;       // 缓冲区大小
     size_t elem_size; // 元素大小
     bool full;        // 缓冲区是否已满
-    mtx_t lock;       // 互斥锁
 } buffer_t;
 
 typedef struct

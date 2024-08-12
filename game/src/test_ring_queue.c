@@ -9,7 +9,7 @@ typedef struct
 
 int main()
 {
-    ring_queue *q = ring_queue_new(sizeof(custom_data_t), 3);
+    ring_queue *q = ring_queue_new(sizeof(custom_data_t), 10);
     custom_data_t data1 = {1, 1.1f};
     custom_data_t data2 = {2, 2.2f};
     custom_data_t data3 = {3, 3.3f};
@@ -20,10 +20,10 @@ int main()
 
     custom_data_t result;
     ring_queue_dequeue(q, &result);
-    // printf("Dequeued: %d, %f\n", result.x, result.y); // 输出1, 1.1
+    printf("Dequeued: %d, %f\n", result.x, result.y); // 输出1, 1.1
 
     ring_queue_dequeue(q, &result);
-    // printf("Dequeued: %d, %f\n", result.x, result.y); // 输出2, 2.2
+    printf("Dequeued: %d, %f\n", result.x, result.y); // 输出2, 2.2
 
     ring_queue_free(q);
     return 0;
