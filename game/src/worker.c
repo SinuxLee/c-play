@@ -4,83 +4,81 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const uint16_t HASH_TABLE_SIZE =100;
+#ifdef _MSC_VER
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
 
-// 哈希函数
-static inline size_t hash(int id) {
-    return (size_t) (id % HASH_TABLE_SIZE);
+#include "logger.h"
+
+static void delay(uint16_t ms)
+{
+#ifdef _WIN32
+    Sleep(ms);
+#else
+    usleep(ms * 1000);
+#endif
 }
 
 // Worker处理消息的线程函数
-static int worker_thread_func(void *arg) {
+static int worker_thread_func(void *arg)
+{
     Worker *worker = (Worker *)arg;
-
-    while (atomic_load(&worker->running)) {
-        mtx_lock(&worker->queue_mutex);
-        
-        while (worker->queue_size == 0) {
-            cnd_wait(&worker->queue_cond, &worker->queue_mutex);
-        }
-
-        Message msg = worker->message_queue[--worker->queue_size];
-        
-        mtx_unlock(&worker->queue_mutex);
-
-        size_t idx = hash(msg.id);
-        Handler handler = worker->handlers[idx];
-
-        if (handler == NULL) {
-            printf("No handler found for message ID: %d\n", msg.id);
+    Message msg;
+    while (atomic_load(&worker->running))
+    {
+        bool ok = ring_queue_dequeue(worker->message_queue, &msg);
+        if (!ok)
+        {
+            delay(10);
             continue;
         }
-        
+
+        Handler handler = worker->handlers[msg.id];
+        if (handler == NULL)
+        {
+            LOG_ERROR("No handler found for message ID: %d", msg.id);
+            free(msg.data);
+            continue;
+        }
+
         handler(&msg);
+        free(msg.data);
     }
 
     return EXIT_SUCCESS;
 }
 
 // 初始化Worker结构体
-void init_worker(Worker *worker) {
+Worker *create_worker()
+{
+    Worker *worker = malloc(sizeof(Worker));
     worker->running = true;
-    worker->queue_size = 0;
-    worker->queue_capacity = 10000;
-    worker->message_queue = malloc(worker->queue_capacity * sizeof(Message));
-    mtx_init(&worker->queue_mutex, mtx_plain);
-    cnd_init(&worker->queue_cond);
-    worker->handlers = calloc(HASH_TABLE_SIZE, sizeof(Handler));
+    worker->message_queue = ring_queue_new(sizeof(Message), INT16_MAX);
+    worker->handlers = calloc(INT16_MAX, sizeof(Handler));
     thrd_create(&worker->thread, worker_thread_func, worker);
+    return worker;
 }
 
 // 停止Worker
-void stop_worker(Worker *worker) {
+void stop_worker(Worker *worker)
+{
     atomic_store(&worker->running, false);
-    cnd_signal(&worker->queue_cond);
     thrd_join(worker->thread, NULL);
-    mtx_destroy(&worker->queue_mutex);
-    cnd_destroy(&worker->queue_cond);
+    ring_queue_free(worker->message_queue);
     free(worker->handlers);
-    free(worker->message_queue);
+    free(worker);
 }
 
 // 向Worker添加消息
-void add_message(Worker *worker, Message msg) {
-    mtx_lock(&worker->queue_mutex);
-
-    if (worker->queue_size == worker->queue_capacity) {
-        worker->queue_capacity *= 2;
-        worker->message_queue = realloc(worker->message_queue, worker->queue_capacity * sizeof(Message));
-    }
-
-    worker->message_queue[worker->queue_size++] = msg;
-    cnd_signal(&worker->queue_cond);
-
-    mtx_unlock(&worker->queue_mutex);
+void add_message(Worker *worker, Message msg)
+{
+    ring_queue_enqueue(worker->message_queue, &msg);
 }
 
 // 向HashTable添加Handler
-bool register_handler(Worker *worker, uint16_t id, Handler handler) {
-    size_t idx = hash(id);
-    worker->handlers[idx] = handler;
+bool register_handler(Worker *worker, uint16_t id, Handler handler)
+{
+    worker->handlers[id] = handler;
 }
-

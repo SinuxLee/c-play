@@ -4,27 +4,27 @@
 #include <stdatomic.h>
 #include <threads.h>
 
+#include "ring_queue.h"
+
 // 消息结构体
-typedef struct {
-    int id;
+typedef struct
+{
+    uint16_t id;
     void *data;
 } Message;
 
-typedef void(*Handler)(Message *);
+typedef void (*Handler)(Message *);
 
 // Worker结构体
-typedef struct {
+typedef struct
+{
     thrd_t thread;
     atomic_bool running;
-    Message *message_queue;
-    size_t queue_size;
-    size_t queue_capacity;
-    mtx_t queue_mutex;
-    cnd_t queue_cond;
+    ring_queue *message_queue;
     Handler *handlers;
 } Worker;
 
-void init_worker(Worker *worker);
-void stop_worker(Worker *worker);
-void add_message(Worker *worker, Message msg);
-bool register_handler(Worker *worker, uint16_t id, Handler handler);
+Worker *create_worker();
+void stop_worker(Worker *);
+void add_message(Worker *, Message);
+bool register_handler(Worker *, uint16_t, Handler);

@@ -60,6 +60,7 @@ static void print(const char *file, uint32_t line, const char * func, const char
   mtx_lock(&logger->mutex);
   utringbuffer_push_back(logger->logs, &data);
   mtx_unlock(&logger->mutex);
+  free(buffer);
 }
 
 static int handle_log(void *data){

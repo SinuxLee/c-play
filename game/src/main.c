@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 
     ring_queue_free(q);
 
-    pause();
+    sleep(2);
 
     return EXIT_SUCCESS;
 }
