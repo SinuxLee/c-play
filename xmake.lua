@@ -1,5 +1,5 @@
 add_rules("mode.debug", "mode.release")
-set_languages("c17", "c++23")
+set_languages("c11", "c++17")
 
 add_requires("uthash 2023.7.11")
 add_defines("NDEBUG", "_GNU_SOURCE=1")

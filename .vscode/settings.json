@@ -8,6 +8,17 @@
         "stdatomic.h": "c",
         "threads.h": "c",
         "logger.h": "c",
-        "unistd.h": "c"
+        "unistd.h": "c",
+        "vcruntime.h": "c",
+        "xthreads.h": "c",
+        "vcruntime_c11_stdatomic.h": "c",
+        "atomic": "c",
+        "cstddef": "c",
+        "cstdlib": "c",
+        "cstring": "c",
+        "ctime": "c",
+        "type_traits": "c",
+        "player_mgr.h": "c",
+        "player.h": "c"
     }
 }
