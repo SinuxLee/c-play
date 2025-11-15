@@ -1,0 +1,12 @@
+
+### vscode-like 识别 xmake 安装的 pacakge path
+```bash
+# 生成 .vscode/compile_commands.json
+xmake project -k compile_commands .vscode
+
+# 在 c_cpp_properties.json 中添加
+"compileCommands": "${workspaceFolder}/.vscode/compile_commands.json"
+
+# 在 settings.json 中添加
+"C_Cpp.default.compileCommands": "${workspaceFolder}/.vscode/compile_commands.json"
+```

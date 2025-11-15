@@ -54,7 +54,7 @@ ring_queue * ring_queue_new(size_t elem_size, size_t max_size)
     buffer_init(&q->buffers[1], elem_size, max_size);
     q->write_buf = &q->buffers[0];
     q->read_buf = &q->buffers[1];
-    mtx_init(&q->swap_lock, mtx_plain);
+    PLATFORM_MUTEX_INIT(&q->swap_lock);
     return q;
 }
 
@@ -63,14 +63,14 @@ void ring_queue_free(ring_queue *q)
 {
     buffer_free(&q->buffers[0]);
     buffer_free(&q->buffers[1]);
-    mtx_destroy(&q->swap_lock);
+    PLATFORM_MUTEX_DESTROY(&q->swap_lock);
     free(q);
 }
 
 /* 入队操作 */
 void ring_queue_enqueue(ring_queue *q, void *item)
 {
-    mtx_lock(&q->swap_lock);
+    PLATFORM_MUTEX_LOCK(&q->swap_lock);
 
     buffer_t *buf = q->write_buf;
     buffer_push(buf, item);
@@ -82,13 +82,13 @@ void ring_queue_enqueue(ring_queue *q, void *item)
         q->read_buf = temp;
     }
 
-    mtx_unlock(&q->swap_lock);
+    PLATFORM_MUTEX_UNLOCK(&q->swap_lock);
 }
 
 /* 出队操作 */
 bool ring_queue_dequeue(ring_queue *q, void *item)
 {
-    mtx_lock(&q->swap_lock);
+    PLATFORM_MUTEX_LOCK(&q->swap_lock);
     buffer_t *buf = q->read_buf;
 
     bool success = buffer_pop(buf,item);
@@ -100,6 +100,6 @@ bool ring_queue_dequeue(ring_queue *q, void *item)
         success = buffer_pop(buf,item);
     }
 
-    mtx_unlock(&q->swap_lock);
+    PLATFORM_MUTEX_UNLOCK(&q->swap_lock);
     return success;
 }

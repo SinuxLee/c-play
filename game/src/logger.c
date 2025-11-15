@@ -8,8 +8,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <threads.h>
 
+#include "platform_mutex.h"
+#include "platform_thread.h"
 #include "utringbuffer.h"
 
 #ifdef _MSC_VER
@@ -34,11 +35,11 @@ typedef struct {
 
 typedef struct {
   UT_ringbuffer *logs;
-  mtx_t mutex; // protect logs
+  platform_mutex_t mutex; // protect logs
 
   LOG_LEVEL level;
   const char *file_name;
-  thrd_t pth;
+  platform_thread_t pth;
   bool quit;
 } Logger;
 
@@ -57,19 +58,25 @@ static void print(const char *file, uint32_t line, const char * func, const char
 
   vsnprintf(buffer + len, LOG_SIZE - len, format, args);
   LogData data = {.data = buffer};
-  mtx_lock(&logger->mutex);
+  PLATFORM_MUTEX_LOCK(&logger->mutex);
   utringbuffer_push_back(logger->logs, &data);
-  mtx_unlock(&logger->mutex);
+  PLATFORM_MUTEX_UNLOCK(&logger->mutex);
   free(buffer);
 }
 
+#if defined(__APPLE__) || defined(__MACH__)
+static void* handle_log(void *data){
+#elif defined(_WIN32) || defined(_WIN64)
+static DWORD WINAPI handle_log(void *data){
+#else
 static int handle_log(void *data){
+#endif
   Logger *logger = (Logger*)data;
   LogData *item = NULL;
   while(!logger->quit){
-    mtx_lock(&logger->mutex);
+    PLATFORM_MUTEX_LOCK(&logger->mutex);
     LogData *next = (LogData*)utringbuffer_next(logger->logs, item);
-    mtx_unlock(&logger->mutex);
+    PLATFORM_MUTEX_UNLOCK(&logger->mutex);
     if(next == NULL){
       delay(10);
       continue;
@@ -79,7 +86,13 @@ static int handle_log(void *data){
     printf("%s\n", item->data);
   }
   utringbuffer_free(logger->logs);
+#if defined(__APPLE__) || defined(__MACH__)
+  return NULL;
+#elif defined(_WIN32) || defined(_WIN64)
+  return 0;
+#else
   return EXIT_SUCCESS;
+#endif
 }
 
 static void copy_log_data(void *_dst, const void *_src) {
@@ -105,12 +118,13 @@ bool init_logger(LoggerOpt *opt) {
     }
   }
 
-  static Logger l = {.mutex = mtx_plain, .quit=false};
+  static Logger l = {.quit=false};
   logger = &l;
   logger->level = lv;
   logger->file_name=opt->file_name;
+  PLATFORM_MUTEX_INIT(&logger->mutex);
   utringbuffer_new(logger->logs, 50000, &log_data_icd);
-  thrd_create(&logger->pth, handle_log, (void *)logger);
+  platform_thread_create(&logger->pth, PLATFORM_THREAD_FUNC(handle_log), (void *)logger);
 
   if (opt->file_name == NULL)
     logger->file_name = "log.txt";

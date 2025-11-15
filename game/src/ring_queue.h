@@ -1,7 +1,7 @@
 #pragma once
 #include <stddef.h>
-#include <threads.h>
 #include <stdbool.h>
+#include "platform_mutex.h"
 
 typedef struct
 {
@@ -18,7 +18,7 @@ typedef struct
     buffer_t buffers[2]; // 双缓冲区
     buffer_t *write_buf; // 当前写缓冲区
     buffer_t *read_buf;  // 当前读缓冲区
-    mtx_t swap_lock;     // 交换缓冲区的锁
+    platform_mutex_t swap_lock;     // 交换缓冲区的锁
 } ring_queue;
 
 ring_queue * ring_queue_new(size_t elem_size, size_t max_size);

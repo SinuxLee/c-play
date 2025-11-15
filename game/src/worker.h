@@ -2,8 +2,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdatomic.h>
-#include <threads.h>
 
+#include "platform_thread.h"
 #include "ring_queue.h"
 
 // 消息结构体
@@ -18,7 +18,7 @@ typedef void (*Handler)(Message *);
 // Worker结构体
 typedef struct
 {
-    thrd_t thread;
+    platform_thread_t thread;
     atomic_bool running;
     ring_queue *message_queue;
     Handler *handlers;

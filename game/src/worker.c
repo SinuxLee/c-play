@@ -22,7 +22,13 @@ static void delay(uint16_t ms)
 }
 
 // Worker处理消息的线程函数
+#if defined(__APPLE__) || defined(__MACH__)
+static void* worker_thread_func(void *arg)
+#elif defined(_WIN32) || defined(_WIN64)
+static DWORD WINAPI worker_thread_func(void *arg)
+#else
 static int worker_thread_func(void *arg)
+#endif
 {
     Worker *worker = (Worker *)arg;
     Message msg;
@@ -47,7 +53,13 @@ static int worker_thread_func(void *arg)
         free(msg.data);
     }
 
+#if defined(__APPLE__) || defined(__MACH__)
+    return NULL;
+#elif defined(_WIN32) || defined(_WIN64)
+    return 0;
+#else
     return EXIT_SUCCESS;
+#endif
 }
 
 // 初始化Worker结构体
@@ -57,7 +69,7 @@ Worker *create_worker()
     worker->running = true;
     worker->message_queue = ring_queue_new(sizeof(Message), INT16_MAX);
     worker->handlers = calloc(INT16_MAX, sizeof(Handler));
-    thrd_create(&worker->thread, worker_thread_func, worker);
+    platform_thread_create(&worker->thread, PLATFORM_THREAD_FUNC(worker_thread_func), worker);
     return worker;
 }
 
@@ -65,7 +77,7 @@ Worker *create_worker()
 void stop_worker(Worker *worker)
 {
     atomic_store(&worker->running, false);
-    thrd_join(worker->thread, NULL);
+    platform_thread_join(worker->thread);
     ring_queue_free(worker->message_queue);
     free(worker->handlers);
     free(worker);
@@ -81,4 +93,5 @@ void add_message(Worker *worker, Message msg)
 bool register_handler(Worker *worker, uint16_t id, Handler handler)
 {
     worker->handlers[id] = handler;
+    return true;
 }

@@ -19,6 +19,10 @@
         "ctime": "c",
         "type_traits": "c",
         "player_mgr.h": "c",
-        "player.h": "c"
-    }
+        "player.h": "c",
+        "lua.h": "c",
+        "lualib.h": "c",
+        "lauxlib.h": "c"
+    },
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/.vscode/compile_commands.json"
 }
