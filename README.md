@@ -4,6 +4,7 @@
 # 生成 .vscode/compile_commands.json
 xmake project -k compile_commands .vscode
 
+# ctr/cmd + p 然后输入 >C/C++: Edit Configurations (JSON)
 # 在 c_cpp_properties.json 中添加
 "compileCommands": "${workspaceFolder}/.vscode/compile_commands.json"
 
