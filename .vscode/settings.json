@@ -24,7 +24,10 @@
         "lualib.h": "c",
         "lauxlib.h": "c",
         "stdio.h": "c",
-        "raylib.h": "c"
+        "raylib.h": "c",
+        "httpserver.h": "c",
+        "string.h": "c",
+        "hv.h": "c"
     },
     "C_Cpp.default.compileCommands": "${workspaceFolder}/.vscode/compile_commands.json"
 }

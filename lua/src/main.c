@@ -5,21 +5,26 @@
 
 int main()
 {
-    lua_State *L = luaL_newstate(); // 创建 Lua VM
-    luaL_openlibs(L);               // 打开标准库
+    // 创建 Lua VM
+    lua_State *L = luaL_newstate();
+    // 打开标准库
+    luaL_openlibs(L);
 
-    if (luaL_dofile(L, "script/test.lua"))
-    { // 载入脚本
+    // 载入脚本
+    if (luaL_dofile(L, "lua/script/test.lua"))
+    {
         printf("Lua error: %s\n", lua_tostring(L, -1));
         return 1;
     }
 
-    lua_getglobal(L, "add"); // 获取 lua 函数
+     // 获取 lua 函数
+    lua_getglobal(L, "add");
     lua_pushinteger(L, 10);
     lua_pushinteger(L, 32);
 
+    // 调用：2 参数，1 返回值
     if (lua_pcall(L, 2, 1, 0) != 0)
-    { // 调用：2 参数，1 返回值
+    {
         printf("Lua error: %s\n", lua_tostring(L, -1));
         return 1;
     }

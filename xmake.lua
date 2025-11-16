@@ -1,7 +1,7 @@
 add_rules("mode.debug", "mode.release")
 set_languages("c11", "c++17")
 
-add_requires("uthash 2023.7.11", "lua >=5.4.0", "raylib >=5.5.0")
+add_requires("uthash 2023.7.11", "lua ~5.4.0", "raylib ~5.5.0")
 add_defines("NDEBUG", "_GNU_SOURCE=1")
 if is_mode("debug") then
     add_cflags("-g", "-fsanitize=address")
