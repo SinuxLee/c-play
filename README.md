@@ -11,3 +11,9 @@ xmake project -k compile_commands .vscode
 # 在 settings.json 中添加
 "C_Cpp.default.compileCommands": "${workspaceFolder}/.vscode/compile_commands.json"
 ```
+
+### 嵌入式编译器
+- Keil
+- SDCC
+- GCC
+- IAR
