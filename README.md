@@ -17,3 +17,11 @@ xmake project -k compile_commands .vscode
 - SDCC
 - GCC
 - IAR
+
+### 轻量选型
+- curl
+- cjosn
+- lua
+- sqlite
+- libae
+- ImGui/duilib
